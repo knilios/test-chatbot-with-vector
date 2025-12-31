@@ -140,14 +140,70 @@ async function processSummaries() {
 }
 
 /**
+ * Reformulate user input into better search query
+ */
+async function reformulateQuery(input, recentContext = []) {
+  try {
+    // Build context from recent conversation
+    const contextStr = recentContext
+      .slice(-4) // Last 2 exchanges
+      .map(msg => `${msg.role}: ${msg.content}`)
+      .join('\n');
+    
+    const prompt = `Given this user input and recent conversation context, generate a concise search query to find relevant memories.
+
+Recent context:
+${contextStr || 'No recent context'}
+
+User input: "${input}"
+
+Generate a search query that captures:
+- What the user is asking about
+- Key entities, topics, or concepts
+- Implicit references from context
+
+Output ONLY the search query, nothing else. Keep it under 20 words.`;
+
+    const response = await openai.chat.completions.create({
+      model: 'gpt-4o-mini', // Use cheaper model for this
+      messages: [
+        {
+          role: 'system',
+          content: 'You are a search query optimizer. Convert user messages into effective search queries for finding relevant memories. Output only the query.'
+        },
+        {
+          role: 'user',
+          content: prompt
+        }
+      ],
+      max_tokens: 100,
+      temperature: 0.3
+    });
+
+    const searchQuery = response.choices[0].message.content.trim();
+    return searchQuery;
+  } catch (error) {
+    console.error('[Query Reformulation] Error:', error.message);
+    // Fallback to original input
+    return input;
+  }
+}
+
+/**
  * Handle AI chat interaction
  */
 async function handleChat(input) {
   try {
+    // Reformulate query for better memory search
+    const searchQuery = await reformulateQuery(input, conversationCache);
+    
+    if (searchQuery !== input) {
+      console.log(`[Reformulated query: "${searchQuery}"]`);
+    }
     console.log('[Searching memories...]');
     
     // Search vector database for relevant memories
-    const relevantMemories = await searchMemories(input, 3);
+    const relevantMemories = await searchMemories(searchQuery, 3);
     
     if (relevantMemories.length > 0) {
       console.log(`Found ${relevantMemories.length} relevant memories:`);
