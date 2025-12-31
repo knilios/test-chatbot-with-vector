@@ -1,0 +1,24 @@
+{
+  "name": "vector-memory-prototype",
+  "version": "1.0.0",
+  "description": "Simple console prototype demonstrating AI memory with vector database",
+  "main": "index.js",
+  "scripts": {
+    "start": "node index.js",
+    "test": "node test.js",
+    "test:chunking": "node test-chunking.js"
+  },
+  "keywords": [
+    "ai",
+    "vector-database",
+    "memory",
+    "chatbot"
+  ],
+  "author": "",
+  "license": "MIT",
+  "dependencies": {
+    "openai": "^4.73.0",
+    "chromadb": "^1.9.2",
+    "dotenv": "^16.4.7"
+  }
+}
