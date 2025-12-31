@@ -4,7 +4,9 @@
  */
 
 require('dotenv').config();
+const readline = require('readline');
 const { processConversations } = require('./memoryProcessor');
+const { storeMemories, clearAllMemories } = require('./vectorDB');
 
 // Sample summary to test with
 // This simulates the rolling summary after multiple conversation cycles
@@ -59,7 +61,38 @@ async function testChunking() {
     const wordCounts = chunks.map(c => c.narrative.split(/\s+/).length);
     console.log(`\n   Word counts: ${wordCounts.join(', ')}`);
     
-    console.log('\n💡 Tip: Edit the testSummaries array above to test different inputs\n');
+    console.log('\n💡 Tip: Edit the testSummary variable above to test different inputs\n');
+    
+    // Ask if user wants to store in database
+    console.log('=' .repeat(70));
+    console.log('\n📦 Do you want to store these chunks in the database?');
+    console.log('   This will CLEAR existing memories and store these test chunks.');
+    console.log('\n   Type "yes" to store, or press Enter to skip: ');
+    
+    const rl = readline.createInterface({
+      input: process.stdin,
+      output: process.stdout
+    });
+    
+    return new Promise((resolve) => {
+      rl.question('', async (answer) => {
+        if (answer.trim().toLowerCase() === 'yes') {
+          console.log('\n🗑️  Clearing existing memories...');
+          await clearAllMemories();
+          
+          console.log('💾 Storing test chunks in database...');
+          await storeMemories(chunks);
+          
+          console.log(`✅ Successfully stored ${chunks.length} chunks in the database!`);
+          console.log('\n💡 You can now run "npm start" and search for these memories.\n');
+        } else {
+          console.log('\n⏭️  Skipped database storage.\n');
+        }
+        
+        rl.close();
+        resolve();
+      });
+    });
     
   } catch (error) {
     console.error('\n❌ Error:', error.message);
